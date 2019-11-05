@@ -133,6 +133,7 @@ class DeepAREstimator(GluonEstimator):
         lags_seq: Optional[List[int]] = None,
         time_features: Optional[List[TimeFeature]] = None,
         num_parallel_samples: int = 100,
+        pick_incomplete: bool = True,
         dtype: DType = np.float32,
     ) -> None:
         super().__init__(trainer=trainer, dtype=dtype)
@@ -196,6 +197,8 @@ class DeepAREstimator(GluonEstimator):
         self.history_length = self.context_length + max(self.lags_seq)
 
         self.num_parallel_samples = num_parallel_samples
+
+        self.pick_incomplete = pick_incomplete
 
     def create_transformation(self) -> Transformation:
         remove_field_names = [FieldName.FEAT_DYNAMIC_CAT]
@@ -277,6 +280,7 @@ class DeepAREstimator(GluonEstimator):
                         FieldName.FEAT_TIME,
                         FieldName.OBSERVED_VALUES,
                     ],
+                    pick_incomplete=self.pick_incomplete,
                 ),
             ]
         )
