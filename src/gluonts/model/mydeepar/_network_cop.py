@@ -285,6 +285,8 @@ class MyDeepARNetwork(mx.gluon.HybridBlock):
         # static_feat: (batch_size, num_features + prod(target_shape))
         return outputs, state, scale, static_feat
 
+
+class MyDeepARTrainingNetwork(MyDeepARNetwork):
     def distribution(
         self,
         feat_static_cat: Tensor,
@@ -330,18 +332,9 @@ class MyDeepARNetwork(mx.gluon.HybridBlock):
             future_target=future_target,
         )
 
-        sliced_rnn_outputs = (
-            rnn_outputs.slice_axis(axis=1, begin=-take_last_n_timesteps, end=None)
-            if take_last_n_timesteps is not None
-            else rnn_outputs
-        )
-
-        distr_args = self.proj_distr_args(sliced_rnn_outputs)
+        distr_args = self.proj_distr_args(rnn_outputs)
 
         return self.distr_output.distribution(distr_args, scale=scale)
-
-
-class MyDeepARTrainingNetwork(MyDeepARNetwork):
 
     # noinspection PyMethodOverriding,PyPep8Naming
     def hybrid_forward(
@@ -611,57 +604,4 @@ class MyDeepARPredictionNetwork(MyDeepARNetwork):
             begin_states=state,
         )
 
-
-class MyDeepARAnomalyNetwork(MyDeepARNetwork):
-    @validated()
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self.lags_seq = [l - 1 for l in self.lags_seq]
-
-    # noinspection PyMethodOverriding,PyPep8Naming
-    def hybrid_forward(
-        self,
-        F,
-        feat_static_cat: Tensor,  # (batch_size, num_features)
-        feat_static_real: Tensor,  # (batch_size, num_features)
-        past_time_feat: Tensor,  # (batch_size, history_length, num_features)
-        past_target: Tensor,  # (batch_size, history_length, *target_shape)
-        past_observed_values: Tensor,  # (batch_size, history_length, *target_shape)
-        future_time_feat: Tensor,  # (batch_size, prediction_length, num_features)
-    ) -> Tensor:
-        """
-        Predicts samples, all tensors should have NTC layout.
-        Parameters
-        ----------
-        F
-        feat_static_cat : (batch_size, num_features)
-        feat_static_real : (batch_size, num_features)
-        past_time_feat : (batch_size, history_length, num_features)
-        past_target : (batch_size, history_length, *target_shape)
-        past_observed_values : (batch_size, history_length, *target_shape)
-        future_time_feat : (batch_size, prediction_length, num_features)
-
-        Returns
-        -------
-        Tensor
-            Predicted samples
-        """
-
-        # unroll the decoder in "prediction mode", i.e. with past data only
-        rnn_outputs, state, scale, static_feat = self.unroll_encoder(
-            F=F,
-            feat_static_cat=feat_static_cat,
-            feat_static_real=feat_static_real,
-            past_time_feat=past_time_feat,
-            past_target=past_target,
-            past_observed_values=past_observed_values,
-            future_time_feat=None,
-            future_target=None,
-        )
-
-        sliced_rnn_outputs = rnn_outputs.slice_axis(axis=1, begin=-1, end=None)
-
-        distr_args = self.proj_distr_args(sliced_rnn_outputs)
-
-        return distr_args, scale
 

@@ -43,9 +43,10 @@ from gluonts.transform import (
     Transformation,
     VstackFeatures,
 )
+from gluonts.model.forecast_generator import DistributionForecastGenerator
 
 # Relative imports
-from ._network import MyDeepARPredictionNetwork, MyDeepARTrainingNetwork
+from ._network import MyDeepARPredictionNetwork, MyDeepARTrainingNetwork, MyDeepARAnomalyNetwork
 
 
 class MyDeepAREstimator(GluonEstimator):
@@ -313,6 +314,36 @@ class MyDeepAREstimator(GluonEstimator):
         return RepresentableBlockPredictor(
             input_transform=transformation,
             prediction_net=prediction_network,
+            batch_size=self.trainer.batch_size,
+            freq=self.freq,
+            prediction_length=self.prediction_length,
+            ctx=self.trainer.ctx,
+        )
+
+    def create_detector(
+        self, transformation: Transformation, trained_network: HybridBlock
+    ) -> Predictor:
+        anomaly_network = MyDeepARAnomalyNetwork(
+            num_layers=self.num_layers,
+            num_cells=self.num_cells,
+            cell_type=self.cell_type,
+            history_length=self.history_length,
+            context_length=self.context_length,
+            prediction_length=self.prediction_length,
+            distr_output=self.distr_output,
+            dropout_rate=self.dropout_rate,
+            cardinality=self.cardinality,
+            embedding_dimension=self.embedding_dimension,
+            lags_seq=self.lags_seq,
+            scaling=self.scaling,
+        )
+
+        copy_parameters(trained_network, anomaly_network)
+
+        return RepresentableBlockPredictor(
+            input_transform=transformation,
+            prediction_net=anomaly_network,
+            forecast_generator=DistributionForecastGenerator(self.distr_output),
             batch_size=self.trainer.batch_size,
             freq=self.freq,
             prediction_length=self.prediction_length,
