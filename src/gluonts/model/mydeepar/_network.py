@@ -331,7 +331,9 @@ class MyDeepARNetwork(mx.gluon.HybridBlock):
         )
 
         sliced_rnn_outputs = (
-            rnn_outputs.slice_axis(axis=1, begin=-take_last_n_timesteps, end=None)
+            rnn_outputs.slice_axis(
+                axis=1, begin=-take_last_n_timesteps, end=None
+            )
             if take_last_n_timesteps is not None
             else rnn_outputs
         )
@@ -664,4 +666,3 @@ class MyDeepARAnomalyNetwork(MyDeepARNetwork):
         distr_args = self.proj_distr_args(sliced_rnn_outputs)
 
         return distr_args, scale
-

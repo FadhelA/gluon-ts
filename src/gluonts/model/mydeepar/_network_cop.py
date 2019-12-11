@@ -603,5 +603,3 @@ class MyDeepARPredictionNetwork(MyDeepARNetwork):
             scale=scale,
             begin_states=state,
         )
-
-

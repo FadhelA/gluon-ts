@@ -46,7 +46,11 @@ from gluonts.transform import (
 from gluonts.model.forecast_generator import DistributionForecastGenerator
 
 # Relative imports
-from ._network import MyDeepARPredictionNetwork, MyDeepARTrainingNetwork, MyDeepARAnomalyNetwork
+from ._network import (
+    MyDeepARPredictionNetwork,
+    MyDeepARTrainingNetwork,
+    MyDeepARAnomalyNetwork,
+)
 
 
 class MyDeepAREstimator(GluonEstimator):
@@ -269,7 +273,7 @@ class MyDeepAREstimator(GluonEstimator):
                         FieldName.FEAT_TIME,
                         FieldName.OBSERVED_VALUES,
                     ],
-                    pick_incomplete=self.pick_incomplete
+                    pick_incomplete=self.pick_incomplete,
                 ),
             ]
         )
@@ -343,7 +347,9 @@ class MyDeepAREstimator(GluonEstimator):
         return RepresentableBlockPredictor(
             input_transform=transformation,
             prediction_net=anomaly_network,
-            forecast_generator=DistributionForecastGenerator(self.distr_output),
+            forecast_generator=DistributionForecastGenerator(
+                self.distr_output
+            ),
             batch_size=self.trainer.batch_size,
             freq=self.freq,
             prediction_length=self.prediction_length,
